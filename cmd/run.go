@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,8 +11,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ecordell/optgen/helpers"
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jzelinskie/cobrautil/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -20,20 +23,56 @@ import (
 	v1 "github.com/tupyy/assisted-migration-agent/api/v1"
 	"github.com/tupyy/assisted-migration-agent/internal/config"
 	"github.com/tupyy/assisted-migration-agent/internal/handlers"
+	"github.com/tupyy/assisted-migration-agent/internal/models"
 	"github.com/tupyy/assisted-migration-agent/internal/server"
+	"github.com/tupyy/assisted-migration-agent/internal/services"
+	"github.com/tupyy/assisted-migration-agent/pkg/scheduler"
 )
 
 func NewRunCommand(cfg *config.Configuration) *cobra.Command {
 	runCmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run agent",
+		Example: `  # Run agent in disconnected mode
+  agent run --agent-id 550e8400-e29b-41d4-a716-446655440000 --source-id 6ba7b810-9dad-11d1-80b4-00c04fd430c8
+
+  # Run agent in connected mode with authentication
+  agent run --mode connected --agent-id 550e8400-e29b-41d4-a716-446655440000 --source-id 6ba7b810-9dad-11d1-80b4-00c04fd430c8 --authentication-enabled --authentication-jwt-filepath /path/to/jwt
+
+  # Run agent in production mode
+  agent run --agent-id 550e8400-e29b-41d4-a716-446655440000 --source-id 6ba7b810-9dad-11d1-80b4-00c04fd430c8 --server-mode prod --statics-folder /var/www/statics`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateConfiguration(cfg); err != nil {
+				return err
+			}
+
+			zap.S().Info("using configuration", "config", helpers.Flatten(cfg.DebugMap()))
+
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
 			wg := sync.WaitGroup{}
 			wg.Add(1)
 
+			// init scheduler
+			sched := scheduler.NewScheduler(cfg.Agent.NumWorkers)
+			defer sched.Close()
+
+			// parse console update interval
+			updateInterval, err := time.ParseDuration(cfg.Console.UpdateInterval)
+			if err != nil {
+				return fmt.Errorf("invalid console-update-interval %q: %w", cfg.Console.UpdateInterval, err)
+			}
+
+			// init services
+			var consoleSrv *services.Console
+			if models.AgentMode(cfg.Agent.Mode) == models.AgentModeConnected {
+				consoleSrv = services.NewConnectedConsoleService(sched, cfg.Console.URL, updateInterval)
+			} else {
+				consoleSrv = services.NewConsoleService(sched, cfg.Console.URL, updateInterval)
+			}
+			collectorSrv := services.NewCollectorService(sched)
+
 			// init handlers
-			h := handlers.New()
+			h := handlers.New(consoleSrv, collectorSrv)
 
 			srv, err := server.NewServer(cfg, func(router *gin.RouterGroup) {
 				v1.RegisterHandlers(router, h)
@@ -48,7 +87,7 @@ func NewRunCommand(cfg *config.Configuration) *cobra.Command {
 					wg.Done()
 					cancel()
 				}()
-				zap.S().Infof("Starting HTTP server on port %d", cfg.HTTPPort)
+				zap.S().Infof("Starting HTTP server on port %d", cfg.Server.HTTPPort)
 
 				if err := srv.Start(ctx); err != nil {
 					if !errors.Is(err, http.ErrServerClosed) {
@@ -81,30 +120,91 @@ func NewRunCommand(cfg *config.Configuration) *cobra.Command {
 func registerFlags(cmd *cobra.Command, config *config.Configuration) {
 	nfs := cobrautil.NewNamedFlagSets(cmd)
 
-	serverFlagSet := nfs.FlagSet(color.New(color.FgCyan, color.Bold).Sprint("Server"))
+	serverFlagSet := nfs.FlagSet(color.New(color.FgBlue, color.Bold).Sprint("Server"))
 	registerServerFlags(serverFlagSet, config)
 
 	authenticationFlagSet := nfs.FlagSet(color.New(color.FgBlue, color.Bold).Sprint("Authentication"))
 	registerAuthenticationFlags(authenticationFlagSet, config)
 
+	agentFlagSet := nfs.FlagSet(color.New(color.FgBlue, color.Bold).Sprint("Agent"))
+	registerAgentFlags(agentFlagSet, config)
+
+	consoleFlagSet := nfs.FlagSet(color.New(color.FgBlue, color.Bold).Sprint("Console"))
+	registerConsoleFlags(consoleFlagSet, config)
+
 	nfs.AddFlagSets(cmd)
 }
 
+func validateConfiguration(cfg *config.Configuration) error {
+	if err := validateUUID(cfg.Agent.ID, "agent-id"); err != nil {
+		return err
+	}
+	if err := validateUUID(cfg.Agent.SourceID, "source-id"); err != nil {
+		return err
+	}
+
+	switch models.AgentMode(cfg.Agent.Mode) {
+	case models.AgentModeConnected, models.AgentModeDisconnected:
+	default:
+		return fmt.Errorf("invalid mode %q: must be %q or %q", cfg.Agent.Mode, models.AgentModeConnected, models.AgentModeDisconnected)
+	}
+
+	switch config.ServerModeType(cfg.Server.Mode) {
+	case config.ServerModeProd, config.ServerModeDev:
+	default:
+		return fmt.Errorf("invalid server mode %q: must be %q or %q", cfg.Server.Mode, config.ServerModeProd, config.ServerModeDev)
+	}
+
+	if config.ServerModeType(cfg.Server.Mode) == config.ServerModeProd && cfg.Server.StaticsFolder == "" {
+		return errors.New("statics folder must be set when server mode is production")
+	}
+
+	if cfg.Server.HTTPPort < 1 || cfg.Server.HTTPPort > 65535 {
+		return fmt.Errorf("invalid http-port %d: must be between 1 and 65535", cfg.Server.HTTPPort)
+	}
+
+	if cfg.Agent.NumWorkers < 1 {
+		return fmt.Errorf("invalid num-workers %d: must be at least 1", cfg.Agent.NumWorkers)
+	}
+
+	if cfg.Auth.Enabled && cfg.Auth.JWTFilePath == "" {
+		return errors.New("authentication-jwt-filepath must be set when authentication is enabled")
+	}
+
+	return nil
+}
+
+func validateUUID(value, name string) error {
+	if value == "" {
+		return fmt.Errorf("%s cannot be empty", name)
+	}
+	if _, err := uuid.Parse(value); err != nil {
+		return fmt.Errorf("%s must be a valid UUID: %w", name, err)
+	}
+	return nil
+}
+
 func registerServerFlags(flagSet *pflag.FlagSet, config *config.Configuration) {
-	flagSet.StringVar(&config.Mode, "mode", config.Mode, "agent starting mode. Cound be connected to disconnected. Defaults to disconnected")
-	flagSet.IntVar(&config.HTTPPort, "http-port", config.HTTPPort, "port on which the HTTP server is listening")
-	flagSet.StringVar(&config.StaticsFolder, "statics-folder", config.StaticsFolder, "path to statics")
-	flagSet.StringVar(&config.DataFolder, "data-folder", config.DataFolder, "path to the root folder container media")
-	flagSet.StringVar(&config.ServerMode, "server-mode", config.ServerMode, "server mode: either prod or dev. If prod it statics folder must be set")
-	flagSet.StringVar(&config.ConsoleURL, "console-url", config.ConsoleURL, "url of console.redhat.com.Defaults to localhost:7443")
+	flagSet.IntVar(&config.Server.HTTPPort, "http-port", config.Server.HTTPPort, "Port on which the HTTP server is listening")
+	flagSet.StringVar(&config.Server.StaticsFolder, "statics-folder", config.Server.StaticsFolder, "Path to statics folder")
+	flagSet.StringVar(&config.Server.Mode, "server-mode", config.Server.Mode, "Server mode: either prod or dev. If prod the statics folder must be set")
 }
 
 func registerAuthenticationFlags(flagSet *pflag.FlagSet, config *config.Configuration) {
-	flagSet.BoolVar(&config.Auth.Enabled, "authentication-enabled", config.Auth.Enabled, "enable authentication when connecting to console")
-	flagSet.StringVar(&config.Auth.JWTFilePath, "authentication-jwt-filepath", config.Auth.JWTFilePath, "path of the jwt file")
+	flagSet.BoolVar(&config.Auth.Enabled, "authentication-enabled", config.Auth.Enabled, "Enable authentication when connecting to console")
+	flagSet.StringVar(&config.Auth.JWTFilePath, "authentication-jwt-filepath", config.Auth.JWTFilePath, "Path of the jwt file")
 }
 
-func registerHandlerFn() func(router *gin.RouterGroup) {
-	return func(router *gin.RouterGroup) {
-	}
+func registerAgentFlags(flagSet *pflag.FlagSet, config *config.Configuration) {
+	flagSet.StringVar(&config.Agent.Mode, "mode", config.Agent.Mode, "Agent mode: connected or disconnected")
+	flagSet.StringVar(&config.Agent.OpaPoliciesFolder, "opa-policies-folder", config.Agent.OpaPoliciesFolder, "Path to the OPA policies folder")
+	flagSet.StringVar(&config.Agent.ID, "agent-id", config.Agent.ID, "Unique identifier (UUID) for this agent")
+	flagSet.StringVar(&config.Agent.SourceID, "source-id", config.Agent.SourceID, "Source identifier (UUID) for this agent")
+	flagSet.IntVar(&config.Agent.NumWorkers, "num-workers", config.Agent.NumWorkers, "Number of scheduler workers")
+	flagSet.StringVar(&config.Agent.DataFolder, "data-folder", config.Agent.DataFolder, "Path to the persistent data folder")
+}
+
+func registerConsoleFlags(flagSet *pflag.FlagSet, config *config.Configuration) {
+	flagSet.StringVar(&config.Console.URL, "console-url", config.Console.URL, "URL of console.redhat.com")
+	flagSet.StringVar(&config.Console.UpdateInterval, "console-update-interval", config.Console.UpdateInterval, "Interval for console status updates")
 }

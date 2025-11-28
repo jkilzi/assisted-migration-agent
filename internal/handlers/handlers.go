@@ -1,7 +1,17 @@
 package handlers
 
-type Handler struct{}
+import (
+	"github.com/tupyy/assisted-migration-agent/internal/services"
+)
 
-func New() *Handler {
-	return &Handler{}
+type Handler struct {
+	consoleSrv *services.Console
+	collector  *services.Collector
+}
+
+func New(consoleSrv *services.Console, collector *services.Collector) *Handler {
+	return &Handler{
+		consoleSrv: consoleSrv,
+		collector:  collector,
+	}
 }

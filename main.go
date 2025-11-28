@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -28,6 +29,7 @@ func main() {
 		config.WithLogFormat("console"),
 		config.WithLogLevel("debug"),
 		config.WithServerMode("dev"),
+		config.WithAgentID(uuid.NewString()),
 	)
 	registerLoggingFlags(rootCmd, cfg)
 

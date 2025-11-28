@@ -30,13 +30,10 @@ func NewConfigurationWithOptionsAndDefaults(opts ...ConfigurationOption) *Config
 // ToOption returns a new ConfigurationOption that sets the values from the passed in Configuration
 func (c *Configuration) ToOption() ConfigurationOption {
 	return func(to *Configuration) {
-		to.ServerMode = c.ServerMode
-		to.Mode = c.Mode
-		to.HTTPPort = c.HTTPPort
-		to.StaticsFolder = c.StaticsFolder
-		to.DataFolder = c.DataFolder
-		to.ConsoleURL = c.ConsoleURL
+		to.Server = c.Server
+		to.Agent = c.Agent
 		to.Auth = c.Auth
+		to.Console = c.Console
 		to.LogFormat = c.LogFormat
 		to.LogLevel = c.LogLevel
 	}
@@ -45,13 +42,10 @@ func (c *Configuration) ToOption() ConfigurationOption {
 // DebugMap returns a map form of Configuration for debugging
 func (c *Configuration) DebugMap() map[string]any {
 	debugMap := map[string]any{}
-	debugMap["ServerMode"] = helpers.DebugValue(c.ServerMode, false)
-	debugMap["Mode"] = helpers.DebugValue(c.Mode, false)
-	debugMap["HTTPPort"] = helpers.DebugValue(c.HTTPPort, false)
-	debugMap["StaticsFolder"] = helpers.DebugValue(c.StaticsFolder, false)
-	debugMap["DataFolder"] = helpers.DebugValue(c.DataFolder, false)
-	debugMap["ConsoleURL"] = helpers.DebugValue(c.ConsoleURL, false)
+	debugMap["Server"] = helpers.DebugValue(c.Server, false)
+	debugMap["Agent"] = helpers.DebugValue(c.Agent, false)
 	debugMap["Auth"] = helpers.DebugValue(c.Auth, false)
+	debugMap["Console"] = helpers.DebugValue(c.Console, false)
 	debugMap["LogFormat"] = helpers.DebugValue(c.LogFormat, false)
 	debugMap["LogLevel"] = helpers.DebugValue(c.LogLevel, false)
 	return debugMap
@@ -73,45 +67,17 @@ func (c *Configuration) WithOptions(opts ...ConfigurationOption) *Configuration 
 	return c
 }
 
-// WithServerMode returns an option that can set ServerMode on a Configuration
-func WithServerMode(serverMode string) ConfigurationOption {
+// WithServer returns an option that can set Server on a Configuration
+func WithServer(server Server) ConfigurationOption {
 	return func(c *Configuration) {
-		c.ServerMode = serverMode
+		c.Server = server
 	}
 }
 
-// WithMode returns an option that can set Mode on a Configuration
-func WithMode(mode string) ConfigurationOption {
+// WithAgent returns an option that can set Agent on a Configuration
+func WithAgent(agent Agent) ConfigurationOption {
 	return func(c *Configuration) {
-		c.Mode = mode
-	}
-}
-
-// WithHTTPPort returns an option that can set HTTPPort on a Configuration
-func WithHTTPPort(hTTPPort int) ConfigurationOption {
-	return func(c *Configuration) {
-		c.HTTPPort = hTTPPort
-	}
-}
-
-// WithStaticsFolder returns an option that can set StaticsFolder on a Configuration
-func WithStaticsFolder(staticsFolder string) ConfigurationOption {
-	return func(c *Configuration) {
-		c.StaticsFolder = staticsFolder
-	}
-}
-
-// WithDataFolder returns an option that can set DataFolder on a Configuration
-func WithDataFolder(dataFolder string) ConfigurationOption {
-	return func(c *Configuration) {
-		c.DataFolder = dataFolder
-	}
-}
-
-// WithConsoleURL returns an option that can set ConsoleURL on a Configuration
-func WithConsoleURL(consoleURL string) ConfigurationOption {
-	return func(c *Configuration) {
-		c.ConsoleURL = consoleURL
+		c.Agent = agent
 	}
 }
 
@@ -119,6 +85,13 @@ func WithConsoleURL(consoleURL string) ConfigurationOption {
 func WithAuth(auth Authentication) ConfigurationOption {
 	return func(c *Configuration) {
 		c.Auth = auth
+	}
+}
+
+// WithConsole returns an option that can set Console on a Configuration
+func WithConsole(console Console) ConfigurationOption {
+	return func(c *Configuration) {
+		c.Console = console
 	}
 }
 

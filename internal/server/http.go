@@ -27,16 +27,16 @@ type Server struct {
 
 func NewServer(cfg *config.Configuration, registerHandlerFn func(router *gin.RouterGroup)) (*Server, error) {
 	gin.SetMode(gin.DebugMode)
-	if cfg.ServerMode == ProductionServer {
+	if cfg.Server.Mode == ProductionServer {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	engine := gin.New()
 
-	if cfg.Mode == ProductionServer {
+	if cfg.Server.Mode == ProductionServer {
 		// Serve static files from ui/dist directory (for frontend)
-		engine.Static("/static", cfg.StaticsFolder)
-		engine.StaticFile("/", path.Join(cfg.StaticsFolder, "index.html"))
-		engine.StaticFile("/favicon.ico", path.Join(cfg.StaticsFolder, "favicon.ico"))
+		engine.Static("/static", cfg.Server.StaticsFolder)
+		engine.StaticFile("/", path.Join(cfg.Server.StaticsFolder, "index.html"))
+		engine.StaticFile("/favicon.ico", path.Join(cfg.Server.StaticsFolder, "favicon.ico"))
 
 		engine.NoRoute(func(c *gin.Context) {
 			if c.Request.URL.Path[:4] == "/api" {
@@ -45,7 +45,7 @@ func NewServer(cfg *config.Configuration, registerHandlerFn func(router *gin.Rou
 				})
 				return
 			}
-			c.File(path.Join(cfg.StaticsFolder, "index.html"))
+			c.File(path.Join(cfg.Server.StaticsFolder, "index.html"))
 		})
 	}
 
@@ -67,7 +67,7 @@ func NewServer(cfg *config.Configuration, registerHandlerFn func(router *gin.Rou
 	registerHandlerFn(router)
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%d", cfg.HTTPPort),
+		Addr:    fmt.Sprintf("0.0.0.0:%d", cfg.Server.HTTPPort),
 		Handler: engine,
 	}
 
