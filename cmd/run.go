@@ -20,14 +20,14 @@ import (
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 
-	v1 "github.com/tupyy/assisted-migration-agent/api/v1"
-	"github.com/tupyy/assisted-migration-agent/internal/config"
-	"github.com/tupyy/assisted-migration-agent/internal/handlers"
-	"github.com/tupyy/assisted-migration-agent/internal/models"
-	"github.com/tupyy/assisted-migration-agent/internal/server"
-	"github.com/tupyy/assisted-migration-agent/internal/services"
-	"github.com/tupyy/assisted-migration-agent/pkg/console"
-	"github.com/tupyy/assisted-migration-agent/pkg/scheduler"
+	v1 "github.com/kubev2v/assisted-migration-agent/api/v1"
+	"github.com/kubev2v/assisted-migration-agent/internal/config"
+	"github.com/kubev2v/assisted-migration-agent/internal/handlers"
+	"github.com/kubev2v/assisted-migration-agent/internal/models"
+	"github.com/kubev2v/assisted-migration-agent/internal/server"
+	"github.com/kubev2v/assisted-migration-agent/internal/services"
+	"github.com/kubev2v/assisted-migration-agent/pkg/console"
+	"github.com/kubev2v/assisted-migration-agent/pkg/scheduler"
 )
 
 func NewRunCommand(cfg *config.Configuration) *cobra.Command {

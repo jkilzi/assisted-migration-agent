@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tupyy/assisted-migration-agent/internal/models"
-	"github.com/tupyy/assisted-migration-agent/pkg/opa"
+	"github.com/kubev2v/assisted-migration-agent/internal/models"
+	"github.com/kubev2v/assisted-migration-agent/pkg/opa"
 
 	api "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/kubev2v/forklift/pkg/controller/provider/container/vsphere"

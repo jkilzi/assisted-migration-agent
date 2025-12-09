@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/tupyy/assisted-migration-agent/pkg/scheduler"
+	"github.com/kubev2v/assisted-migration-agent/pkg/scheduler"
 )
 
 var _ = Describe("Scheduler", func() {

@@ -10,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	"github.com/tupyy/assisted-migration-agent/internal/config"
-	"github.com/tupyy/assisted-migration-agent/internal/server/middlewares"
+	"github.com/kubev2v/assisted-migration-agent/internal/config"
+	"github.com/kubev2v/assisted-migration-agent/internal/server/middlewares"
 )
 
 const (

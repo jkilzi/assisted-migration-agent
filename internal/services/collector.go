@@ -1,6 +1,6 @@
 package services
 
-import "github.com/tupyy/assisted-migration-agent/pkg/scheduler"
+import "github.com/kubev2v/assisted-migration-agent/pkg/scheduler"
 
 type Collector struct {
 	scheduler *scheduler.Scheduler

@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/tupyy/assisted-migration-agent/internal/models"
+	"github.com/kubev2v/assisted-migration-agent/internal/models"
 )
 
 func (a *AgentStatus) FromModel(m models.AgentStatus) {

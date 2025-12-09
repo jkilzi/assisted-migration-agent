@@ -10,9 +10,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/tupyy/assisted-migration-agent/cmd"
-	"github.com/tupyy/assisted-migration-agent/internal/config"
-	"github.com/tupyy/assisted-migration-agent/pkg/logger"
+	"github.com/kubev2v/assisted-migration-agent/cmd"
+	"github.com/kubev2v/assisted-migration-agent/internal/config"
+	"github.com/kubev2v/assisted-migration-agent/pkg/logger"
 )
 
 func main() {

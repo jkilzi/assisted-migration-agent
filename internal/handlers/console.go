@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	v1 "github.com/tupyy/assisted-migration-agent/api/v1"
-	"github.com/tupyy/assisted-migration-agent/internal/models"
+	v1 "github.com/kubev2v/assisted-migration-agent/api/v1"
+	"github.com/kubev2v/assisted-migration-agent/internal/models"
 )
 
 // GetAgentStatus returns the current agent status

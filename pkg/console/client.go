@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tupyy/assisted-migration-agent/internal/models"
+	"github.com/kubev2v/assisted-migration-agent/internal/models"
 )
 
 type Client struct {

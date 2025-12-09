@@ -7,10 +7,10 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/tupyy/assisted-migration-agent/internal/config"
-	"github.com/tupyy/assisted-migration-agent/internal/models"
-	"github.com/tupyy/assisted-migration-agent/pkg/console"
-	"github.com/tupyy/assisted-migration-agent/pkg/scheduler"
+	"github.com/kubev2v/assisted-migration-agent/internal/config"
+	"github.com/kubev2v/assisted-migration-agent/internal/models"
+	"github.com/kubev2v/assisted-migration-agent/pkg/console"
+	"github.com/kubev2v/assisted-migration-agent/pkg/scheduler"
 )
 
 type Console struct {

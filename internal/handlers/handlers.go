@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/tupyy/assisted-migration-agent/internal/services"
+	"github.com/kubev2v/assisted-migration-agent/internal/services"
 )
 
 type Handler struct {

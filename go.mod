@@ -1,4 +1,4 @@
-module github.com/tupyy/assisted-migration-agent
+module github.com/kubev2v/assisted-migration-agent
 
 go 1.24.10
 
