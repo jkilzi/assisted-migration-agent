@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	api "github.com/kubev2v/migration-planner/api/v1alpha1"
 )
 
@@ -15,4 +17,11 @@ type InfrastructureData struct {
 	TotalClusters         int
 	TotalDatacenters      int
 	VmsPerCluster         []int
+}
+
+// Inventory represents inventory data stored in the database.
+type Inventory struct {
+	Data      []byte
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
