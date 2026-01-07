@@ -86,17 +86,17 @@ func (c *CollectorService) Start(ctx context.Context, creds *models.Credentials)
 	}
 	c.mu.Unlock()
 
-	// Save credentials
-	if err := c.store.Credentials().Save(ctx, creds); err != nil {
-		return err
-	}
-
 	// Set connecting state
 	c.setState(models.CollectorStateConnecting)
 
 	// Verify credentials synchronously
 	if err := c.verifyCredentials(ctx, creds); err != nil {
 		c.setError(err)
+		return err
+	}
+
+	// Save credentials
+	if err := c.store.Credentials().Save(ctx, creds); err != nil {
 		return err
 	}
 
