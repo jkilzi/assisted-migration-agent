@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strings"
 	"time"
 
 	ginzap "github.com/gin-contrib/zap"
@@ -49,7 +50,7 @@ func NewServer(cfg *config.Configuration, registerHandlerFn func(router *gin.Rou
 		engine.StaticFile("/favicon.ico", path.Join(cfg.Server.StaticsFolder, "favicon.ico"))
 
 		engine.NoRoute(func(c *gin.Context) {
-			if c.Request.URL.Path[:4] == "/api" {
+			if strings.HasPrefix(c.Request.URL.Path, "/api") {
 				c.JSON(404, gin.H{
 					"error": "API endpoint not found",
 				})
