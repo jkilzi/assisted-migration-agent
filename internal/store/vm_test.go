@@ -445,7 +445,7 @@ var _ = Describe("VMStore", func() {
 			// Assert
 			Expect(err).NotTo(HaveOccurred())
 			Expect(vm.Disks).To(HaveLen(2))
-			Expect(vm.DiskSize).To(Equal(int64(500+500) * 1024 * 1024)) // parser converts MiB to bytes
+			Expect(vm.DiskSize).To(Equal(int64(500 + 500)))
 			Expect(vm.NICs).To(HaveLen(2))
 			Expect(vm.Issues).To(HaveLen(2))
 			Expect(vm.Issues).To(ContainElement("High memory usage"))
